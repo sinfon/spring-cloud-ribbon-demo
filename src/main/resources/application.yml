@@ -1,0 +1,6 @@
+spring:
+  application:
+    name: ribbon-demo
+  profiles:
+    active: @profileActive@
+
