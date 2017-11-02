@@ -1,3 +1,3 @@
-ashman:
+demoservice:
   ribbon:
-    listOfServers: http://sinfonia.top:10084,http://sinfonia.top:20084
+    listOfServers: http://sinfonia.top:10089,http://sinfonia.top:20089

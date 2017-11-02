@@ -41,25 +41,9 @@ public class DemoController {
         return ResponseEntity.ok(result);
     }
 
-    @GetMapping("/list")
-    public ResponseEntity<String> show() {
-        String result = restTemplate.getForObject("http://ashman/v1/ashman", String.class);
-        return ResponseEntity.ok(result);
-    }
-
     @GetMapping("/demo/instance")
     public void logDemoInstance() {
         ServiceInstance serviceInstance = loadBalancerClient.choose(virtualHostName);
-        LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
-                serviceInstance.getServiceId(),
-                serviceInstance.getHost(),
-                serviceInstance.getPort()
-        );
-    }
-
-    @GetMapping("/instance")
-    public void logInstance() {
-        ServiceInstance serviceInstance = loadBalancerClient.choose("ashman");
         LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
                 serviceInstance.getServiceId(),
                 serviceInstance.getHost(),
