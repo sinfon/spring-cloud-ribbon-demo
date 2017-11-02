@@ -50,7 +50,7 @@ public class WebConfig {
 @RestController
 public class DemoController {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoController.class);
-    private static final String virtualHostName = "demo-server";
+    private static final String virtualHostName = "demoservice";
     private final RestTemplate restTemplate;
     private final LoadBalancerClient loadBalancerClient;
 
@@ -60,14 +60,14 @@ public class DemoController {
         this.loadBalancerClient = loadBalancerClient;
     }
 
-    @GetMapping("/list")
-    public ResponseEntity<String> show() {
-        String result = restTemplate.getForObject("http://demo-server/v1/demo", String.class);
+    @GetMapping("/demo/info")
+    public ResponseEntity<String> demoInfo() {
+        String result = restTemplate.getForObject("http://demoservice/info", String.class);
         return ResponseEntity.ok(result);
     }
     
-    @GetMapping("/instance")
-    public void logInstance() {
+    @GetMapping("/demo/instance")
+    public void logDemoInstance() {
         ServiceInstance serviceInstance = loadBalancerClient.choose(virtualHostName);
         LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
                 serviceInstance.getServiceId(),
@@ -80,13 +80,13 @@ public class DemoController {
 
 ### 虚拟主机名
 
-虚拟主机名可以 **自动映射** 为对应的服务地址，多次访问 `/instance` 输出如下
+虚拟主机名可以 **自动映射** 为对应的服务地址，多次访问 `/demo/instance` 输出如下
 
 ```
-ServiceId: demo-server; Host: demo.com; Port: 20084
-ServiceId: demo-server; Host: demo.com; Port: 10084
-ServiceId: demo-server; Host: demo.com; Port: 20084
-ServiceId: demo-server; Host: demo.com; Port: 10084
+ServiceId: demoservice; Host: demo.com; Port: 20088
+ServiceId: demoservice; Host: demo.com; Port: 10088
+ServiceId: demoservice; Host: demo.com; Port: 20088
+ServiceId: demoservice; Host: demo.com; Port: 10088
 ```
 
 不难发现，如果不进行额外配置，默认会以 **轮询** 的方式访问服务
@@ -96,7 +96,7 @@ ServiceId: demo-server; Host: demo.com; Port: 10084
 ```
 eureka:
   instance:
-    virtual-host-name: demo-server-name
+    virtual-host-name: demoservice-test
 ```
 
 通过 Ribbon 访问服务，以虚拟主机名区分是否为同一个服务
@@ -106,9 +106,9 @@ eureka:
 ## 脱离注册中心使用
 
 ```
-server-name:
+demoservice:
   ribbon:
-    listOfServers: http://demo.com:10084,http://demo.com:20084
+    listOfServers: http://demo.com:10088,http://demo.com:20088
 ```
 
 **PS** 仅适用于当前客户端未在注册中心注册（或者没有注册中心），但是需要使用 Ribbon 的场景。
@@ -119,39 +119,23 @@ server-name:
 
 ### 负载均衡规则
 
+修改为随机
+
 ```
 @Configuration
-public class DemoServerRibbonConfiguration {
-    @Bean
-    public IRule ribbonRule() {
-        return new RandomRule();
+@RibbonClient(name = "spring-cloud-ribbon-demo", configuration = RibbonConfig.RibbonConfiguration.class)
+public class RibbonConfig {
+    @Configuration
+    public class RibbonConfiguration {
+        @Bean
+        public IRule ribbonRule() {
+            return new RandomRule();
+        }
     }
 }
 ```
-```
-@Configuration
-@RibbonClient(name = "ashman", configuration = DemoServerRibbonConfiguration.class)
-public class DemoServerRibbonConfig {
-}
-```
 
+---
 
-
-
-
-
-
-
-
-
-
-
-## QA
-
-通过Docker将同样的服务绑定在不同的外部端口（内部端口相同），则无法实现轮询
-
-- eureka上绑定信息感知不到外部端口不同
-- 那么该如何使用docker部署多个微服务呢
-- 每台机器上一整套，而不是一台机器上多个同一种服务？
 
 
