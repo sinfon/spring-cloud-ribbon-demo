@@ -117,6 +117,19 @@ demoservice:
 
 ## 自定义配置
 
+针对每种服务自定义配置，需要将配置文件放在启动类的 ComponentScan 之外
+
+且注意虚拟主机名和 @RibbonClient的名称大小写一致，对大小写敏感
+
+并不是大小写敏感
+
+只有虚拟主机名使用大写，而配置的name使用小写的时候才会无法生效
+
+虚拟主机名小写，配置大写不会有问题
+
+大小写一致不会有问题
+
+
 ### 负载均衡规则
 
 修改为随机
@@ -134,7 +147,30 @@ public class RibbonConfig {
     }
 }
 ```
+### 为不同服务客户端配置不同的负载均衡策略
 
+### 两种配置方式
+
+### 在服务中心注册，但是不通过服务中心使用 ribbon
+
+```yaml
+ribbon:
+  eureka:
+   enabled: false
+```
+## Caching of Ribbon Configuration
+   
+Each Ribbon named client has a corresponding child Application Context that Spring Cloud maintains, this application context is lazily loaded up on the first request to the named client. This lazy loading behavior can be changed to instead eagerly load up these child Application contexts at startup by specifying the names of the Ribbon clients.
+
+```yaml
+ribbon:
+  eager-load:
+    enabled: true
+    clients: client1, client2, client3
+```
+   
+服务名 虚拟主机名 服务ID
+   
 ---
 
 

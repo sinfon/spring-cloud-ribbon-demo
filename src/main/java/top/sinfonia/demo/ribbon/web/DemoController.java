@@ -19,7 +19,8 @@ import org.springframework.web.client.RestTemplate;
 @RestController
 public class DemoController {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoController.class);
-    private static final String virtualHostName = "demoservice";
+    private static final String VIRTUAL_HOST_NAME_DEMOSERVICE = "demoservice";
+    private static final String VIRTUAL_HOST_NAME_ASHMAN = "ashman";
     private final RestTemplate restTemplate;
     private final LoadBalancerClient loadBalancerClient;
 
@@ -31,23 +32,41 @@ public class DemoController {
 
     @GetMapping("/demo/ip")
     public ResponseEntity<String> demoIp() {
-        String result = restTemplate.getForObject("http://demoservice/ip", String.class);
+        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/ip", String.class);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/demo/info")
     public ResponseEntity<String> demoInfo() {
-        String result = restTemplate.getForObject("http://demoservice/info", String.class);
+        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/info", String.class);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/demo/instance")
-    public void logDemoInstance() {
-        ServiceInstance serviceInstance = loadBalancerClient.choose(virtualHostName);
+    public ResponseEntity<ServiceInstance> logDemoInstance() {
+        ServiceInstance serviceInstance = loadBalancerClient.choose(VIRTUAL_HOST_NAME_DEMOSERVICE);
         LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
                 serviceInstance.getServiceId(),
                 serviceInstance.getHost(),
                 serviceInstance.getPort()
         );
+        return ResponseEntity.ok(serviceInstance);
+    }
+
+    @GetMapping("/ashman/list")
+    public ResponseEntity<String> ashmanList() {
+        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_ASHMAN + "/v1/ashman", String.class);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/ashman/instance")
+    public ResponseEntity<ServiceInstance> logAshmanInstance() {
+        ServiceInstance serviceInstance = loadBalancerClient.choose(VIRTUAL_HOST_NAME_ASHMAN);
+        LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
+                serviceInstance.getServiceId(),
+                serviceInstance.getHost(),
+                serviceInstance.getPort()
+        );
+        return ResponseEntity.ok(serviceInstance);
     }
 }

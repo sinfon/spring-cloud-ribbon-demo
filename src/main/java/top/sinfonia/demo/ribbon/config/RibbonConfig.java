@@ -1,10 +1,10 @@
 package top.sinfonia.demo.ribbon.config;
 
-import com.netflix.loadbalancer.IRule;
-import com.netflix.loadbalancer.RandomRule;
 import org.springframework.cloud.netflix.ribbon.RibbonClient;
-import org.springframework.context.annotation.Bean;
+import org.springframework.cloud.netflix.ribbon.RibbonClients;
 import org.springframework.context.annotation.Configuration;
+import top.sinfonia.demo.config.AshmanConfig;
+import top.sinfonia.demo.config.DemoserviceConfig;
 
 /**
  * <br>
@@ -13,13 +13,16 @@ import org.springframework.context.annotation.Configuration;
  * <b>Author:</b> Asher<br>
  */
 @Configuration
-@RibbonClient(name = "spring-cloud-ribbon-demo", configuration = RibbonConfig.RibbonConfiguration.class)
+@RibbonClients(value = {
+        @RibbonClient(name = "ashman", configuration = AshmanConfig.class),
+        @RibbonClient(name = "demoservice", configuration = DemoserviceConfig.class)
+})
 public class RibbonConfig {
-    @Configuration
-    public class RibbonConfiguration {
-        @Bean
-        public IRule ribbonRule() {
-            return new RandomRule();
-        }
-    }
+//    @Configuration
+//    public class RibbonConfiguration {
+//        @Bean
+//        public IRule ribbonRule() {
+//            return new RandomRule();
+//        }
+//    }
 }
