@@ -4,6 +4,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.loadbalancer.LoadBalanced;
 import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,24 +22,32 @@ public class DemoController {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoController.class);
     private static final String VIRTUAL_HOST_NAME_DEMOSERVICE = "demoservice";
     private static final String VIRTUAL_HOST_NAME_ASHMAN = "ashman";
-    private final RestTemplate restTemplate;
-    private final LoadBalancerClient loadBalancerClient;
 
     @Autowired
-    public DemoController(RestTemplate restTemplate, LoadBalancerClient loadBalancerClient) {
-        this.restTemplate = restTemplate;
-        this.loadBalancerClient = loadBalancerClient;
-    }
+    @LoadBalanced
+    private RestTemplate loadBalanced;
+    @Autowired
+
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private LoadBalancerClient loadBalancerClient;
 
     @GetMapping("/demo/ip")
     public ResponseEntity<String> demoIp() {
-        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/ip", String.class);
+        String result = loadBalanced.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/ip", String.class);
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/demo/ip/10088")
+    public ResponseEntity<String> demoIp10088() {
+        String result = restTemplate.getForObject("http://sinfonia.top:10088/ip", String.class);
         return ResponseEntity.ok(result);
     }
 
     @GetMapping("/demo/info")
     public ResponseEntity<String> demoInfo() {
-        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/info", String.class);
+        String result = loadBalanced.getForObject("http://" + VIRTUAL_HOST_NAME_DEMOSERVICE + "/info", String.class);
         return ResponseEntity.ok(result);
     }
 
@@ -55,7 +64,7 @@ public class DemoController {
 
     @GetMapping("/ashman/list")
     public ResponseEntity<String> ashmanList() {
-        String result = restTemplate.getForObject("http://" + VIRTUAL_HOST_NAME_ASHMAN + "/v1/ashman", String.class);
+        String result = loadBalanced.getForObject("http://" + VIRTUAL_HOST_NAME_ASHMAN + "/v1/ashman", String.class);
         return ResponseEntity.ok(result);
     }
 

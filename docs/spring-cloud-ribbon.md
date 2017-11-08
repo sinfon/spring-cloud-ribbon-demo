@@ -1,18 +1,9 @@
-# Spring Cloud Ribbon
+# Spring Cloud Ribbon 简介
 
----
+- 基于 HTTP 和 TCP 的 **客户端** 负载均衡工具
+- 基于 Netflix Ribbon 实现，通过 Spring Cloud 封装
 
-基于 HTTP 和 TCP 的 **客户端** 负载均衡工具
-
-基于 Netflix Ribbon 实现，通过 Spring Cloud 封装
-
----
-
-## 准备工作
-
-### 依赖
-
-只需要 `spring-cloud-starter-eureka`
+## 依赖
 
 ```
 <dependency>
@@ -21,64 +12,95 @@
 </dependency>
 ```
 
-因为 `spring-cloud-starter-eureka` 中已经包含了如下几个必要的依赖：
-
+`spring-cloud-starter-eureka` 已包含必要依赖：
 - `spring-boot-starter-web`
 - `spring-cloud-starter`
 - `spring-cloud-netflix-eureka-client`
 - `spring-cloud-starter-ribbon`
-- and so on
 
-### 配置
-
-```
-@Configuration
-public class WebConfig {
-    @Bean
-    @LoadBalanced
-    public RestTemplate restTemplate() {
-        return new RestTemplate();
-    }
-}
-```
-
----
 
 ## 使用
 
-```
-@RestController
-public class DemoController {
-    private static final Logger LOGGER = LoggerFactory.getLogger(DemoController.class);
-    private static final String virtualHostName = "demoservice";
-    private final RestTemplate restTemplate;
-    private final LoadBalancerClient loadBalancerClient;
+### 创建负载均衡的 RestTemplate 对象
 
+```java
+@Configuration
+public class MyConfiguration {
+
+    @LoadBalanced
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+
+public class MyClass {
     @Autowired
-    public DemoController(RestTemplate restTemplate, LoadBalancerClient loadBalancerClient) {
-        this.restTemplate = restTemplate;
-        this.loadBalancerClient = loadBalancerClient;
-    }
+    private RestTemplate restTemplate;
 
-    @GetMapping("/demo/info")
-    public ResponseEntity<String> demoInfo() {
-        String result = restTemplate.getForObject("http://demoservice/info", String.class);
-        return ResponseEntity.ok(result);
-    }
-    
-    @GetMapping("/demo/instance")
-    public void logDemoInstance() {
-        ServiceInstance serviceInstance = loadBalancerClient.choose(virtualHostName);
-        LOGGER.info("ServiceId: {}; Host: {}; Port: {}",
-                serviceInstance.getServiceId(),
-                serviceInstance.getHost(),
-                serviceInstance.getPort()
-        );
+    public String doOtherStuff() {
+        String results = restTemplate.getForObject("http://stores/stores", String.class);
+        return results;
     }
 }
 ```
 
-### 虚拟主机名
+### 创建不同需求的 RestTemplate 对象
+
+If you want a RestTemplate that is not load balanced, create a RestTemplate bean and inject it as normal. 
+To access the load balanced RestTemplate use the @LoadBalanced qualifier when you create your @Bean.
+
+```java
+@Configuration
+public class MyConfiguration {
+
+    @LoadBalanced
+    @Bean
+    RestTemplate loadBalanced() {
+        return new RestTemplate();
+    }
+
+    @Primary
+    @Bean
+    RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+}
+
+public class MyClass {
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    @LoadBalanced
+    private RestTemplate loadBalanced;
+
+    public String doOtherStuff() {
+        return loadBalanced.getForObject("http://stores/stores", String.class);
+    }
+
+    public String doStuff() {
+        return restTemplate.getForObject("http://example.com", String.class);
+    }
+}
+```
+
+### 直接使用 Ribbon API
+
+```java
+public class MyClass {
+    @Autowired
+    private LoadBalancerClient loadBalancer;
+
+    public void doStuff() {
+        ServiceInstance instance = loadBalancer.choose("stores");
+        URI storesUri = URI.create(String.format("http://%s:%s", instance.getHost(), instance.getPort()));
+        // ... do something with the URI
+    }
+}
+```
+
+## 虚拟主机名
 
 虚拟主机名可以 **自动映射** 为对应的服务地址，多次访问 `/demo/instance` 输出如下
 
@@ -101,9 +123,10 @@ eureka:
 
 通过 Ribbon 访问服务，以虚拟主机名区分是否为同一个服务
 
----
 
 ## 脱离注册中心使用
+
+注册中心并非 Ribbon 使用的必要条件，在无注册中心的情况下，可通过下面配置，设置 Ribbon 的服务访问列表
 
 ```
 demoservice:
@@ -111,56 +134,102 @@ demoservice:
     listOfServers: http://demo.com:10088,http://demo.com:20088
 ```
 
-**PS** 仅适用于当前客户端未在注册中心注册（或者没有注册中心），但是需要使用 Ribbon 的场景。
+适用场景：
+- 无注册中心
+- 未在注册中心注册
+- Ribbon 禁用了注册中心
 
----
-
-## 自定义配置
-
-针对每种服务自定义配置，需要将配置文件放在启动类的 ComponentScan 之外
-
-且注意虚拟主机名和 @RibbonClient的名称大小写一致，对大小写敏感
-
-并不是大小写敏感
-
-只有虚拟主机名使用大写，而配置的name使用小写的时候才会无法生效
-
-虚拟主机名小写，配置大写不会有问题
-
-大小写一致不会有问题
-
-
-### 负载均衡规则
-
-修改为随机
+### 配置 Ribbon 禁用 Eureka
 
 ```
-@Configuration
-@RibbonClient(name = "spring-cloud-ribbon-demo", configuration = RibbonConfig.RibbonConfiguration.class)
-public class RibbonConfig {
-    @Configuration
-    public class RibbonConfiguration {
-        @Bean
-        public IRule ribbonRule() {
-            return new RandomRule();
-        }
-    }
-}
-```
-### 为不同服务客户端配置不同的负载均衡策略
-
-### 两种配置方式
-
-### 在服务中心注册，但是不通过服务中心使用 ribbon
-
-```yaml
 ribbon:
   eureka:
    enabled: false
 ```
+
+
+## 自定义配置
+
+```java
+@Configuration
+public class FooConfiguration {
+    @Bean
+    public IPing ribbonPing(IClientConfig config) {
+        return new PingUrl();
+    }
+}
+```
+
+> The FooConfiguration has to be @Configuration but take care that it is not in a @ComponentScan 
+> for the main application context, otherwise it will be shared by all the @RibbonClients. 
+> 
+> If you use @ComponentScan (or @SpringBootApplication) you need to take steps 
+> to avoid it being included (for instance put it in a separate, non-overlapping package, 
+> or specify the packages to scan explicitly in the @ComponentScan).
+
+### @RibbonClient
+
+```java
+@Configuration
+@RibbonClient(name = "foo", configuration = FooConfiguration.class)
+public class TestConfiguration {
+}
+```
+
+### @RibbonClients
+
+```java
+@Configuration
+@RibbonClients(value = {
+        @RibbonClient(name = "foo", configuration = FooConfiguration.class),
+        @RibbonClient(name = "bar", configuration = BarConfiguration.class)
+})
+public class TestConfiguration {
+}
+```
+
+### 配置介绍
+
+默认配置 `org.springframework.cloud.netflix.ribbon.RibbonClientConfiguration`
+
+- Rule 
+    - 逻辑组件，用于判定返回服务列表中的哪一个
+- Ping 
+    - 后台运行，确认各个服务的存活状态
+- ServerList 
+    - 可以被静态或动态指定，动态指定时，后台线程会以特定时间间隔，刷新并过滤服务列表
+    - 动态指定 `DynamicServerListLoadBalancer`
+
+
+Spring Cloud Netflix provides the following beans by default for ribbon (BeanType beanName: ClassName):
+- IClientConfig ribbonClientConfig: DefaultClientConfigImpl
+- IRule ribbonRule: ZoneAvoidanceRule
+- IPing ribbonPing: NoOpPing
+- ServerList<Server> ribbonServerList: ConfigurationBasedServerList
+- ServerListFilter<Server> ribbonServerListFilter: ZonePreferenceServerListFilter
+- ILoadBalancer ribbonLoadBalancer: ZoneAwareLoadBalancer
+- ServerListUpdater ribbonServerListUpdater: PollingServerListUpdater
+
+
+### 通过属性自定义 Ribbon 客户端
+
+The supported properties are listed below and should be prefixed by <clientName>.ribbon.:
+- NFLoadBalancerClassName: should implement ILoadBalancer
+- NFLoadBalancerRuleClassName: should implement IRule
+- NFLoadBalancerPingClassName: should implement IPing
+- NIWSServerListClassName: should implement ServerList
+- NIWSServerListFilterClassName should implement ServerListFilter
+
+> Classes defined in these properties have precedence over beans 
+> defined using @RibbonClient(configuration=MyRibbonConfig.class) and the defaults provided by Spring Cloud Netflix.
+
+
 ## Caching of Ribbon Configuration
    
-Each Ribbon named client has a corresponding child Application Context that Spring Cloud maintains, this application context is lazily loaded up on the first request to the named client. This lazy loading behavior can be changed to instead eagerly load up these child Application contexts at startup by specifying the names of the Ribbon clients.
+Each Ribbon named client has a corresponding child Application Context that Spring Cloud maintains, 
+this application context is lazily loaded up on the first request to the named client. 
+This lazy loading behavior can be changed to instead eagerly load up these child Application contexts 
+at startup by specifying the names of the Ribbon clients.
 
 ```yaml
 ribbon:
@@ -169,9 +238,11 @@ ribbon:
     clients: client1, client2, client3
 ```
    
-服务名 虚拟主机名 服务ID
-   
----
+## 问题
 
+- [ ] 访问使用的虚拟主机名与 @RibbonClient 名称的配置存在一些不理解的问题，比如大小写，具体指代之类
 
+## 参考链接
+
+- [Spring Cloud](http://cloud.spring.io/spring-cloud-static/Dalston.SR3/)
 
