@@ -18,11 +18,4 @@ import top.sinfonia.demo.config.DemoserviceConfig;
         @RibbonClient(name = "demoservice", configuration = DemoserviceConfig.class)
 })
 public class RibbonConfig {
-//    @Configuration
-//    public class RibbonConfiguration {
-//        @Bean
-//        public IRule ribbonRule() {
-//            return new RandomRule();
-//        }
-//    }
 }

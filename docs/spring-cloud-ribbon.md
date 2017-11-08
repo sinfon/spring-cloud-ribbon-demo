@@ -21,6 +21,31 @@
 
 ## 使用
 
+### 虚拟主机名
+
+使用 `@LoadBalanced` 的 `RestTemplate` 对象时，虚拟主机名可以 **自动映射** 为对应的服务地址。
+
+如下面会用到的 `http://stores/stores` 中，`stores` 即为虚拟主机名。
+
+通过 Eureka + Ribbon 访问服务时，默认情况下，虚拟主机名与服务名一致，如果需要设定，在服务端修改如下配置
+
+```
+eureka:
+  instance:
+    virtual-host-name: foobar
+```
+
+仅通过 Ribbon 访问服务，虚拟主机名则为配置文件中设定的客户端名称，如下例中的 `foo`
+
+```
+foo:
+  ribbon:
+    listOfServers: http://example.com:10088,http://example.com:20088
+```
+
+详见下文 [脱离注册中心使用](#脱离注册中心使用)
+
+
 ### 创建负载均衡的 RestTemplate 对象
 
 ```java
@@ -39,8 +64,7 @@ public class MyClass {
     private RestTemplate restTemplate;
 
     public String doOtherStuff() {
-        String results = restTemplate.getForObject("http://stores/stores", String.class);
-        return results;
+        return restTemplate.getForObject("http://stores/stores", String.class);
     }
 }
 ```
@@ -69,11 +93,11 @@ public class MyConfiguration {
 
 public class MyClass {
     @Autowired
-    private RestTemplate restTemplate;
-
-    @Autowired
     @LoadBalanced
     private RestTemplate loadBalanced;
+    
+    @Autowired
+    private RestTemplate restTemplate;
 
     public String doOtherStuff() {
         return loadBalanced.getForObject("http://stores/stores", String.class);
@@ -100,38 +124,15 @@ public class MyClass {
 }
 ```
 
-## 虚拟主机名
-
-虚拟主机名可以 **自动映射** 为对应的服务地址，多次访问 `/demo/instance` 输出如下
-
-```
-ServiceId: demoservice; Host: demo.com; Port: 20088
-ServiceId: demoservice; Host: demo.com; Port: 10088
-ServiceId: demoservice; Host: demo.com; Port: 20088
-ServiceId: demoservice; Host: demo.com; Port: 10088
-```
-
-不难发现，如果不进行额外配置，默认会以 **轮询** 的方式访问服务
-
-**PS** 默认情况下，虚拟主机名与服务名一致，如需指定。可在服务端修改如下配置
-
-```
-eureka:
-  instance:
-    virtual-host-name: demoservice-test
-```
-
-通过 Ribbon 访问服务，以虚拟主机名区分是否为同一个服务
-
 
 ## 脱离注册中心使用
 
 注册中心并非 Ribbon 使用的必要条件，在无注册中心的情况下，可通过下面配置，设置 Ribbon 的服务访问列表
 
 ```
-demoservice:
+foo:
   ribbon:
-    listOfServers: http://demo.com:10088,http://demo.com:20088
+    listOfServers: http://example.com:10088,http://example.com:20088
 ```
 
 适用场景：
@@ -144,11 +145,13 @@ demoservice:
 ```
 ribbon:
   eureka:
-   enabled: false
+    enabled: false
 ```
 
 
 ## 自定义配置
+
+### 配置类
 
 ```java
 @Configuration
@@ -160,14 +163,16 @@ public class FooConfiguration {
 }
 ```
 
-> The FooConfiguration has to be @Configuration but take care that it is not in a @ComponentScan 
-> for the main application context, otherwise it will be shared by all the @RibbonClients. 
-> 
-> If you use @ComponentScan (or @SpringBootApplication) you need to take steps 
-> to avoid it being included (for instance put it in a separate, non-overlapping package, 
-> or specify the packages to scan explicitly in the @ComponentScan).
+**WARNING** 
+- The FooConfiguration has to be **@Configuration** 
+- but take care that it is **NOT** in a **@ComponentScan** for the main application context, 
+- **otherwise** it will be shared by all the @RibbonClients. 
 
-### @RibbonClient
+> If you use @ComponentScan (or @SpringBootApplication) you need to take steps to avoid it being included 
+> (for instance put it in a separate, non-overlapping package, or specify the packages to scan explicitly in the @ComponentScan).
+
+
+### 配置使能 @RibbonClient
 
 ```java
 @Configuration
@@ -176,7 +181,7 @@ public class TestConfiguration {
 }
 ```
 
-### @RibbonClients
+### 配置使能 @RibbonClients
 
 ```java
 @Configuration
