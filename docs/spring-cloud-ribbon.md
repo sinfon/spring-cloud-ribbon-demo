@@ -198,13 +198,11 @@ public class TestConfiguration {
 默认配置 `org.springframework.cloud.netflix.ribbon.RibbonClientConfiguration`
 
 - Rule 
-    - 逻辑组件，用于判定返回服务列表中的哪一个
+    - 逻辑组件，用于决定本次选择服务列表中的哪一个
 - Ping 
     - 后台运行，确认各个服务的存活状态
 - ServerList 
-    - 可以被静态或动态指定，动态指定时，后台线程会以特定时间间隔，刷新并过滤服务列表
-    - 动态指定 `DynamicServerListLoadBalancer`
-
+    - 可以被静态或动态指定，动态指定（via `DynamicServerListLoadBalancer`）时，后台线程会以特定时间间隔，刷新并过滤服务列表
 
 Spring Cloud Netflix provides the following beans by default for ribbon (BeanType beanName: ClassName):
 - IClientConfig ribbonClientConfig: DefaultClientConfigImpl
@@ -234,18 +232,19 @@ The supported properties are listed below and should be prefixed by <clientName>
 > Classes defined in these properties have precedence over 
 > beans defined using @RibbonClient(configuration=MyRibbonConfig.class) and the defaults provided by Spring Cloud Netflix.
 
-**说明** 以上是官方文档的备注，但是实测效果，优先级如下
-- **1** beans defined using @RibbonClient(configuration=MyRibbonConfig.class)
-- **2** classes defined in these properties
-- **3** the defaults provided by Spring Cloud Netflix
+**说明** 以上优先级说明是官方文档的备注，但是实测效果，优先级如下
+- beans defined using @RibbonClient(configuration=MyRibbonConfig.class)
+- classes defined in these properties
+- the defaults provided by Spring Cloud Netflix
 
-**注意** 虚拟主机名、@RibbonClient 配置的名称、通过属性配置的名称，同一种服务应保持 **大小写一致**
+**注意** 虚拟主机名、@RibbonClient 配置的名称、通过属性配置的名称，同一种服务名称应保持 **大小写一致**
 
 
-## Caching of Ribbon Configuration
-   
+## 立即加载
+
 Each Ribbon named client has a corresponding child Application Context that Spring Cloud maintains, 
 this application context is lazily loaded up on the first request to the named client. 
+
 This lazy loading behavior can be changed to instead eagerly load up these child Application contexts 
 at startup by specifying the names of the Ribbon clients.
 
