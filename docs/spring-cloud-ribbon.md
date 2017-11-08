@@ -218,6 +218,12 @@ Spring Cloud Netflix provides the following beans by default for ribbon (BeanTyp
 
 ### 通过属性自定义 Ribbon 客户端
 
+```
+foo:
+  ribbon:
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
+```
+
 The supported properties are listed below and should be prefixed by <clientName>.ribbon.:
 - NFLoadBalancerClassName: should implement ILoadBalancer
 - NFLoadBalancerRuleClassName: should implement IRule
@@ -225,8 +231,15 @@ The supported properties are listed below and should be prefixed by <clientName>
 - NIWSServerListClassName: should implement ServerList
 - NIWSServerListFilterClassName should implement ServerListFilter
 
-> Classes defined in these properties have precedence over beans 
-> defined using @RibbonClient(configuration=MyRibbonConfig.class) and the defaults provided by Spring Cloud Netflix.
+> Classes defined in these properties have precedence over 
+> beans defined using @RibbonClient(configuration=MyRibbonConfig.class) and the defaults provided by Spring Cloud Netflix.
+
+**说明** 以上是官方文档的备注，但是实测效果，优先级如下
+- **1** beans defined using @RibbonClient(configuration=MyRibbonConfig.class)
+- **2** classes defined in these properties
+- **3** the defaults provided by Spring Cloud Netflix
+
+**注意** 虚拟主机名、@RibbonClient 配置的名称、通过属性配置的名称，同一种服务应保持 **大小写一致**
 
 
 ## Caching of Ribbon Configuration
@@ -242,10 +255,7 @@ ribbon:
     enabled: true
     clients: client1, client2, client3
 ```
-   
-## 问题
 
-- [ ] 访问使用的虚拟主机名与 @RibbonClient 名称的配置存在一些不理解的问题，比如大小写，具体指代之类
 
 ## 参考链接
 

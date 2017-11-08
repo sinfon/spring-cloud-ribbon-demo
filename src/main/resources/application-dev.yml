@@ -5,3 +5,6 @@ eureka:
 demoservice:
   ribbon:
     NFLoadBalancerRuleClassName: com.netflix.loadbalancer.RandomRule
+ashman:
+  ribbon:
+    NFLoadBalancerRuleClassName: com.netflix.loadbalancer.ZoneAvoidanceRule
